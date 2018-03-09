@@ -1,0 +1,361 @@
+---
+title: "Drawing using ggplot2 package"
+author: "Ozancan Özdemir"
+date: "March 9, 2018"
+output: word_document
+---
+
+## What is ggplot2?
+ggplot2 is a plotting system for R, based on the grammar of graphics, which tries to take the good parts of base and lattice graphics and none of the bad parts. It takes care of many of the fiddly details that make plotting a hassle (like drawing legends) as well as providing a powerful model of graphics that makes it easy to produce complex multi-layered graphics.
+
+*To get more information about this special packages, you can visit  [http://ggplot2.org/](http://ggplot2.org/)
+
+*Also, there are many videos, books and pages related to this packages. 
+
+The ggplot2 implies "Grammar of Graphics" which believes in the principle that a plot can be split into the following basic parts -
+
+_Plot = data + Aesthetics + Geometry_
+
+* **data** refers to a data frame (dataset).
+
+* **Aesthetics** indicates x and y variables. It is also used to tell R how data are displayed in a plot, e.g. color, size and shape of points etc.
+
+* **Geometry** refers to the type of graphics (bar chart, histogram, box plot, line plot, density plot, dot plot etc.)
+
+## Why ggplot2 is better?
+
+* Excellent themes can be created with a single command. 
+
+* Its colors are nicer and more pretty than the usual graphics. 
+
+* Easy to visualize data with multiple variables. 
+
+* Provides a platform to create simple graphs providing plethora of information.
+
+**_Before starting class, please load the following libraries_**
+
+```
+install.packages(c("ggplot2","gcookbook")) #to install more than one library at the same time.
+#ggplot2 is for the graphical representation
+#gcookbook is for some special data sets
+```
+
+**_After installing, please do no forget to call your libraries for the next steps._**
+
+```{r,warning=F}
+library(ggplot2) #calling ggplot2 library
+library(gcookbook)#calling gcookbook library
+```
+
+
+#### Scatter Plot 
+Scatter plots can help you identify the relationship between two data samples. A scatter plot is a simple plot of one variable against another. 
+
+###### Short Reminder- How to draw a scatter plot using general commands?
+
+Let's consider _mtcars_ data set being available in R.
+
+```{r}
+head(mtcars) #the first six observation of mtcars being an available in R is shown
+plot(mtcars$wt, mtcars$mpg) #to draw a scatter plot, use plot command 
+
+```
+
+_How can we draw same plot by using ggplot2?_
+
+```{r}
+qplot(mtcars$wt, mtcars$mpg) #first way
+```
+
+_If the two vectors are already in the same data frame, you can use the following syntax:_
+
+```{r}
+qplot(wt, mpg, data=mtcars) 
+```
+
+_Another way_
+```{r}
+ggplot(mtcars, aes(x=wt, y=mpg)) + geom_point() #suggested way
+#geom_point function creates your plot as scatter plot
+```
+
+
+#### Adding Label Names and Titles
+To add title and label names into your plot, ```labs``` command is used. Consider the previous plot.
+```{r}
+ggplot(mtcars, aes(x=wt, y=mpg)) + geom_point()+labs(title="Scatter plot of wt and mpg",x="wt", y = "mpg") 
+#title is used to add title
+#x change the name of x axes
+#y change the name of y axes
+```
+
+The  ```labs``` command can be used not only scatter plot, but also other plots to add title etc.
+
+
+###### Drawing scatter plot of two continious variables conditioned on one categorical variables
+
+```{r}
+head(mtcars)
+table(mtcars$cyl) #produces frequency table
+ggplot(data = mtcars,aes(x = mpg,y = disp,colour = factor(cyl))) + geom_point()+labs(title="Scatter plot of wt and mpg with respect to cylinder",x="wt", y = "mpg") 
+```
+
+##### Changing color scale in legend
+
+```{r}
+library(ggplot2)
+c <- ggplot(mtcars,aes(x = mpg, y = disp, color = cyl))  + geom_point()
+c + scale_color_gradient2(low = "yellow", high = "red")
+```
+
+When you use ```scale_color_gradient2``` command, do not use ```factor()``` for coloring your plot.
+
+##### Drawing multiple scatter plot
+
+By using ```facet_wrap``` command, you can easily produce multiple scatter plot.
+
+```{r}
+ggplot(data = mtcars,aes(x = mpg,y = disp)) + geom_point()+labs(title="Scatter plot of wt and mpg with respect to cylinder",x="wt", y = "mpg")+facet_wrap("cyl")
+```
+
+
+#### Line Plot
+
+Line graph is used to look at the changes in variable over time or look at the relationship between two variable. In both cases, x axis corresponds to the independent variable(time, days etc), y axis corresponds to the dependent variable(temperature, income etc)
+
+###### Short Reminder- How to draw a line plot using general commands?
+
+Let's consider _pressure_ data set being available in R.
+
+```{r}
+head(pressure) #shows first 6 observations
+plot(pressure$temperature, pressure$pressure, type="l",xlab="Temperature",ylab="Pressure",main="Relationship btw Pressure and Temperature") #type="l"
+#xlab and ylab options arrange axes name.
+# To add points and/or multiple lines (Figure 2-3, right), first call plot() for the first line,
+#then add points with points() and additional lines with lines():
+points(pressure$temperature, pressure$pressure) #add black points
+lines(pressure$temperature, pressure$pressure/2, col="red") #add red lines 
+points(pressure$temperature, pressure$pressure/2, col="red") #add points to the lines
+
+```
+
+_How can we draw same plot by using ggplot2?_
+
+```{r}
+qplot(pressure$temperature, pressure$pressure, geom="line")
+```
+```{r}
+
+```
+
+_If the two vectors are already in the same data frame, you can use the following syntax:_
+
+```{r}
+qplot(temperature, pressure, data=pressure, geom="line") #with label name
+```
+
+_Another way_
+
+```{r}
+ggplot(pressure, aes(x=temperature, y=pressure)) + geom_line() #geom_line converts your plot into line plot
+```
+
+```{r}
+ggplot(pressure, aes(x=temperature, y=pressure)) + geom_line() + geom_point() #to add points
+
+```
+
+```{r}
+qplot(temperature, pressure, data=pressure, geom=c("line", "point"),col="red") #to change colors of point and line
+```
+
+### Histogram
+Quantitative variables often take so many values that a graph of the distribution is clearer if nearby values are group together. The most common graph of the distribution of one quantitative variable is a histogram. ( Used for continious type of data)
+
+Histogram can be used for **continious** type of random variables
+
+*to find out the shape of the distribution of the variable of interest
+*to detect the outlier
+
+
+###### Short Reminder- How to draw a histogram using general commands?
+
+Let's consider _mtcars_ data set being available in R.
+
+```{r}
+hist(mtcars$mpg)
+hist(mtcars$mpg, breaks=10)#Specify approximate number of bins with breaks
+```
+
+_How can we draw same plot by using ggplot2?_
+
+```{r}
+qplot(mtcars$mpg)
+```
+
+_If the vector is in a data frame, you can use the following syntax:_
+```{r}
+library(ggplot2)
+qplot(mpg, data=mtcars, binwidth=4)
+```
+
+_This is equivalent to:_
+```{r}
+ggplot(mtcars, aes(x=mpg)) + geom_histogram(binwidth=4)#geom_histogram converts your plot into histogram
+
+ggplot(mtcars,aes(x=mpg))+geom_histogram(binwidth = 4,colour="red",fill="yellow")#with color
+#fill fills inside of histogram
+#colour defines the color of frame
+
+```
+
+###### Drawing Multiple Histogram
+
+By using ```facet_wrap``` command, you can easily produce multiple histogram.
+
+```{r}
+ggplot(mtcars,aes(x=mpg))+geom_histogram(binwidth = 4,colour="red",fill="yellow")+facet_wrap("cyl")
+```
+
+### Box Plot
+We use five number summary which are minimum, 1st quartile, median, 3rd quartile and maximum values of data to draw a box plot. 
+On each box, the central mark indicates the median, and the bottom and top edges of the box indicate the 25th and 75th percentiles, respectively. The whiskers extend to the most extreme data points not considered outliers, and the outliers are plotted individually using the '*' symbol.
+
+Box Plot can be used for **continious** type of random variables
+
+*to find out the shape of the distribution of the variable of interest
+*to detect the outlier
+*to compare the variable of interest with respect to categorical variable.
+
+
+###### Short Reminder- How to draw a box plot using general commands?
+
+Let's consider _mtcars_ data set being available in R.
+
+```{r}
+boxplot(mtcars$mpg~mtcars$cyl,main="Distribution of mpg with respect to cyl",col="red")#a simple box plot 
+```
+
+_How can we draw same plot by using ggplot2?_
+```{r}
+qplot(as.factor(mtcars$cyl),mtcars$mpg,geom = "boxplot")
+```
+
+_If the variables are in the same data frame_
+```{r}
+qplot(as.factor(cyl),mpg,data=mtcars,geom="boxplot")
+```
+
+_Another way_
+
+```{r}
+ggplot(mtcars, aes(x=as.factor(cyl), y=mpg)) + geom_boxplot( )
+
+```
+
+#####Customizing boxplot
+```{r}
+ggplot(mtcars, aes(x=as.factor(cyl), y=mpg)) + geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=4,fill="yellow",colour="red")+
+labs(title="Box plot of mpg wrt cyl",x="cyl", y = "mpg")+ theme_classic()
+
+```
+
+####Notched Boxplot
+```{r}
+ggplot(mtcars, aes(x=as.factor(cyl), y=mpg)) + geom_boxplot(notch=TRUE)
+```
+
+####Violin Boxplot
+```{r}
+ggplot(mtcars, aes(x=as.factor(cyl), y=mpg)) + geom_violin()
+ggplot(mtcars, aes(x=as.factor(cyl), y=mpg)) + geom_violin(fill="yellow",colour="red")
+```
+
+6. What is the distribution of number of warts with respect to type of disease
+
+```{r,echo=F}
+ggplot(cryo, aes(x=as.factor(Type), y=Number_of_Warts)) + geom_boxplot( )
+```
+
+### Quantile-Quantile Plot
+
+The quantile-quantile (q-q) plot is a graphical technique for determining whether the variable of interest follows **the normal distribution or not. **
+
+###### Short Reminder- How to draw a box plot using general commands?
+
+```{r}
+qqnorm(mtcars$mpg) #a simple qqplot in R
+```
+
+_How can we draw same plot by using ggplot2?_
+```{r}
+qplot(sample = mpg, data = mtcars)
+```
+
+```{r}
+ggplot(mtcars, aes(sample=mpg))+stat_qq()
+```
+
+```{r}
+ggplot(mtcars, aes(sample=mpg))+stat_qq(col="red") #with red color
+```
+
+###### Change qq plot colors by groups
+```{r}
+ggplot(mtcars) +stat_qq(aes(sample = mpg, colour = factor(cyl)))
+```
+
+In ggplot, we cannot directly add normality line, however there are many functions written for this purpose on the internet
+
+
+### Bar Plot
+A bar chart or bar graph is a chart or graph that presents categorical data with rectangular bars with heights or lengths proportional to the values that they represent.  It assumes that the heights of your bars are conveniently stored in a vector.
+
+###### Short Reminder- How to draw a box plot using general commands?
+
+Let's consider _mtcars_ data set being available in R.
+
+```{r}
+barplot(table(mtcars$cyl))
+barplot(table(mtcars$cyl),col=c("red","yellow","black"),main="Barplot of cyl")
+```
+
+_How can we draw same plot by using ggplot2?_
+```{r}
+ggplot(mtcars, aes(x=cyl)) + geom_bar()
+ggplot(mtcars, aes(x=cyl)) + geom_bar(fill="red",col="yellow")
+ggplot(mtcars,aes(x=cyl))+geom_bar(fill=c("yellow","blue","red"))
+ggplot(mtcars,aes(x=cyl))+geom_bar(fill=c("yellow","blue","red"))+labs(title="Bar plot of cyl",x="number of cyl")
+```
+
+###### Drawing bar plot of continious variable with respect to one categorical variable
+```{r}
+library(gcookbook)
+BOD
+ggplot(BOD, aes(x=factor(Time), y=demand)) + geom_bar(stat="identity")# Convert Time to a discrete (categorical) variable with factor()
+ggplot(BOD, aes(x=factor(Time), y=demand))+geom_bar(stat="identity", fill="lightblue", colour="black")
+```
+
+### Pie Chart
+A pie chart (or a circle chart) is a circular statistical graphic which is divided into slices to illustrate numerical proportion. It is mainly used to represent  **categorical** variables
+
+###### Short Reminder- How to draw a box plot using general commands?
+```{r}
+slices <- c(10, 12,4, 16, 8)
+lbls <- c("US", "UK", "Australia", "Germany", "France")
+pie(slices, labels = lbls, main="Pie Chart of Countries") #label shows the label names
+```
+
+To draw a pie chart in ggplot2, you have to create a bar plot at first. Then, you should convert your bar plot into pie chart.
+
+```{r}
+df<-data.frame(slices=c(10, 12,4, 16, 8),labels=c("US", "UK", "Australia", "Germany", "France"))
+df
+#Use a barplot to visualize the data :
+library(ggplot2)
+# Barplot
+bp<- ggplot(df, aes(x="", y=slices, fill=labels))+geom_bar(width = 1, stat = "identity")
+bp#ggplot2 pie chart for data visualization in R software
+#Create a pie chart :
+bp + coord_polar("y", start=0)
+```
