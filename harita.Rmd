@@ -1,0 +1,270 @@
+---
+title: "R'da ggplot2 ve maps Kutuphanelerini Kullanarak Harita Cizdirmek"
+author: "Ozancan Ozdemir / Orta Dogu Teknik Universitesi"
+output:
+  html_document:
+    df_print: paged
+---
+
+*** R program� ile ilgili eski d�k�manlara ula�mak i�in l�tfen [buraya](http://users.metu.edu.tr/ozancan/notes.html) t�klay�n�z.***
+
+Veri analizi ve g�rselle�tirmenin �neminin giderek artt��� bu d�nemde, bu trende ba�l� olarak spatial(konumsal) verinin kullan�m� da �nem kazand�. �zellikle demografik konular�n, �rne�in i�szilik oran�, g�� oran� vs grafiksel olarak sunumu, spatial datalar�n en �ok kullan�ld��� yer olarak g�sterilebilir. 
+
+R'da spatial datalar� g�rselle�tirmek i�in �e�itli yollar mevcut. Bunlardan biri Hadley Wickham taraf�ndan bir haftasonu projesi olarak ortaya ��kan ```ggplot2``` k�t�phanesi kullanarak harita �izdirme, bir di�eri ise ```ggmap``` k�t�phanesi kullanarak harita �izdirme. Ayr�ca en �ok kullan�lan yollardan biri de ```maps``` k�t�phanesi kullanarak harita �izimi. Bu dosyada ```ggplot2``` ve```maps``` k�t�phaneleri kullanarak harita �izimi konusuna bakaca��z. ```ggmap``` ise yolda. :) 
+
+�lk olarak konumuzla alakali k�t�phaneleri y�kleme ve ard�ndan �a��rma i�lemlerini yapmak zorunday�z. 
+
+```
+install.packages("tidyverse")
+install.packages("sp") #for spatial data
+install.packages("map")
+install.packages("mapproj")
+install.packages("ggmap")
+install.packages("DeducerSpatial")
+install.packages("maps")
+```
+
+***```maps``` Kullanarak Harita �izimi***
+
+Bu �rne�in �ngilizce hali [bu linkte](http://bcb.dfci.harvard.edu/~aedin/courses/R/CDC/maps.html/) bulabilirsiniz. 
+
+�nternette ```maps``` k�t�phanesi kullanarak R'da harita �izdirmek diye aratma yapt���n�z zaman, en �ok g�rece�iniz �rnek Amerika'ya ait. Bunun nedeni ise ```maps``` k�t�phanesinin indexinde sakl�. ```help(package='maps')``` komutunu �al��t�rd�ktan sonra yard�m men�s�nde gelen listeye bakt���n�zda, bu k�t�phanede s�n�rl� say�da-Amerika, �talya, Yeni Zelanda, Fransa, �in ve Kanada- �lke haritas�n�n oldu�unu g�r�yorsunuz. 
+
+```{r,warning=FALSE}
+require(maps)
+```
+
+
+```{r}
+map("usa") #map komutu harita ve poligon �izimi i�in kullan�l�yor
+```
+
+E�er Amerika haritas� eyaletlerine b�l�nm�� olarak �izdirmek istiyorsan�z, map komutunun i�ine ```maps``` k�t�phanesinin i�inde yer alan county se�ene�ini kullanabilirsiniz.
+
+```{r}
+map("county")
+```
+
+***Uygulama***
+
+Amerika'daki eyaletlerin i�sizlik oranlar�n�n, oranlar�n b�y�kl���ne g�re renklendirilmi� haritada g�sterilmesi. 
+
+```{r}
+data(unemp) #data komutu yard�m�yla R'�n i�erisinde yer alan datalar� enviromentimizie y�kl�yoruz.
+data(county.fips)
+```
+
+```{r}
+head(unemp) #datam�z�n ilk 6 sat�r�n� g�rmek i�in head komutunu kullan�yoruz. 
+```
+
+Bu datasetinde fips kolonunun alt�ndaki say�lar eyaletlere kar��l�k gelirken, pop kolonu bu eyaletlerin populasyonlar�n�, unemp kolonu da i�sizlik y�zdelerini g�stermekte. 
+
+
+colors = c("#F1EEF6", "#D4B9DA", "#C994C7", "#DF65B0", "#DD1C77", "#980043")
+```
+
+Burada birbirine yak�n tonlarda 6 adet renk belirledik. 6 adet renk belirlememiz tamamen tercihimize ba�l�, ��nk� i�sizlik oran�n� 6 aral��a b�lerek yapmak istedik bu �rnekte. Ancak siz bu say�y� azaltabilir ya da artt�rabilirsiniz. 
+
+```{r}
+unemp$colorBuckets <- as.numeric(cut(unemp$unemp, c(0, 2, 4, 6, 8, 10, 100)))  
+```
+
+```{r}
+head(unemp)
+```
+
+Burada unemp datam�za colorBuckets ad�nda yeni bir de�i�ken olu�turduk. Bu de�i�keni olu�tururken cut komutundan faydaland�k. ```cut``` komutu herhangi bir numerik de�i�keni belirlenilen aral�klara b�lmeden kullan�l�r. Daha fazla detay i�in [bu adresi ziyaret edebilirsiniz](https://www.rdocumentation.org/packages/base/versions/3.5.1/topics/cut) 
+```{r}
+colorsmatched <- unemp$colorBuckets[match(county.fips$fips, unemp$fips)]
+map("county", col = colors[colorsmatched], fill = TRUE, resolution = 0, lty = 0, projection = "polyconic")
+# Add border around each State
+map("state", col = "white", fill = FALSE, add = TRUE, lty = 1, lwd = 0.2, projection = "polyconic")
+title("Eyaletlerin i�sizlik oran� / Amerika, 2009")
+leg.txt <- c("<2%", "2-4%", "4-6%", "6-8%", "8-10%", ">10%")
+legend("topright", leg.txt, horiz = TRUE, fill = colors)
+```
+
+
+
+
+***```ggplot2``` Kullanarak Harita �izimi***
+
+***```ggplot2``` kullan�m�na dair temel bilgiler i�in l�tfen [t�klay�n](http://users.metu.edu.tr/ozancan/R%20Graphics%20Cookbook.pdf)***
+
+Yukar�daki �rnekte de g�r�ld��� gibi maps k�t�phanesini kullanarak R'da haritas�n� �izdirebilece�imiz �lkelerin say�s� k�s�tl�. Ancak ggplot k�t�panesi kullanarak, spatial datas�n� indirdi�iniz her �lkenin haritas�n� kolayca �izdirebilirsiniz. Bu �rnekte 2015 y�l�nda TU�K taraf�nda yay�nlanan T�rkiye'de illere g�re mutluluk endeksi datas�n� ve a�a��da yazan siteden elde edilen T�rkiye'nin spatial datas�n� birle�tirerek bir harita grafi�i elde edece�iz. 
+
+�lk olarak [bu adresteki](http://www.gadm.org/country) linkten T�rkiye�yi se�ip, dosya format� olarak da ```R (SpatialPolygonsDataFrame)```  �i se�iyoruz. 
+***Not:*** Buradan indirece�iniz veriyi ticari ama�la kullanamazs�n�z.
+
+Ard�ndan ekran�n�za her bir R dosyas�n�n yan�nda yazan ```level 0```, ```level 1``` ve ```level 2``` se�eneklerini g�receksiniz. Bunlardan ```level 0```, il ve il�elerin olmad��� sadece T�rkiye �lke s�n�rlar�n�n yer ald��� dosyad�r.�te yandan ```level 1``` il s�n�rlar�n�n dahil oldu�u, ```level 2``` ise il�e s�n�rlar�n�n da dahil oldu�u dosyad�r. Bu �rnekte illerle ilgilendi�imiz i�in biz ```level 1``` i indiriyoruz.
+
+
+```{r,warning=F}
+require(tidyverse)
+library(sp) # Konumsal (Spatial) veri i�in
+```
+
+
+Spatial veriyi okutma;
+```{r}
+tur<- readRDS("turkey.rds") #reading a spatial data
+```
+
+
+```{r}
+plot(tur)
+```
+
+Verinizi okuttuktan sonra ```plot``` komutu ile kolayca g�rselle�tirebilirsiniz, ancak ba�l�kta da belirtildi�i gibi biz bu g�rselle�tirmeyi ggplot2 k�t�phanesinin komutlar�n� kullanarak yapaca��z. 
+
+```{r}
+tur@data %>% as_tibble() %>% head(10) 
+```
+
+Datay� tibble dosyas� haline getirdik, b�ylece ilerleyen a�amalarda ```tidyverse``` i�erisinde yer alan ``` tidyr```  k�t�phanesindeki ``` left_join```  komutunun kullan�m�n� kolayla�t�rd�k. Ard�ndan ``` head```  komutu ile datan�n ilk 10 sat�r�na g�z att�k.
+
+``` ID_0``` : �lke Kimlik Numaras�
+
+``` ID_1``` : �ehirlerin kimlik numaralar�, bu numaralar� plaka kodlar� ile kar��t�rmay�n.
+
+``` ID_2``` : Bu veride yok ancak il�elerin kimlik numaralar�
+
+Ayn� �ekilde,
+
+``` NAME_0``` : �lke ismi
+
+``` NAME_1``` : �ehir isimleri
+
+``` NAME_2``` : �l�e �simleri
+
+
+```{r}
+ggplot(tur,aes(x=long,y=lat))+geom_polygon()
+```
+
+Bu haritan�n beklenilenden farkl� ��kmas�n�n sebebi, ggplot komutunun elimizdeki veriyi tam olarak anlamamas�ndan kaynaklan�yor. 
+
+```{r}
+ggplot(tur, aes(x = long, y = lat)) + geom_polygon(aes(group = group)) + coord_fixed()
+```
+
+�lke s�n�rlar�n� �izdirdikten sonra �ehirlere b�lmek i�in sp k�t�phanesinin i�indeki ```fortify``` fonksiyonunu kullanaca��z.
+
+```{r}
+tur_for <- fortify(tur) # Bu fonksiyon 'sp' paketinin i�inde.
+```
+
+```{r}
+head(tur_for) #her ilin lattitude ve longitude de�erleri g�sterililyor
+```
+
+```{r}
+ggplot(tur_for) + geom_polygon(aes(x = long, y = lat,group = group),color = "white",fill = "red") +
+theme_void() + coord_fixed()
+```
+
+�imdi TU�K'ten indirdi�imiz excel dosyas�n� okutuyoruz. Konu ba��nda da belirtildi�i gibi data, T�rkiye'deki 81 ilin mutluluk endeksini g�stermekte. 
+
+```{r}
+mutluluk=read.csv("mutluluk.csv",header=T,sep=";")
+head(mutluluk)
+```
+
+Bu noktada kar��m�za ufak bir problem ��k�yor. 
+
+```{r}
+head(tur@data$NAME_1)
+```
+
+```{r}
+head(mutluluk$sehir)
+```
+
+G�r�ld��� �zere spatial data ve okuttu�umuz datada �ehir isimleri i�inde farkl�l�klar var. �rn: Afyon ve Afyonkarahisar. Bu soruna ek T�rk�e karakter sorunu da bir di�er problem. Bu sorunlar�n ��z�m� i�in ise ```gsub``` fonksiyonunu kullanaca��z. Bu fonksiyon karakter yap�s�ndaki bir de�i�kenin i�erisinde yer alan bir ya da birden fazla harfin de�i�tirilmesinde kullan�lan bir fonksiyon. 
+
+```{r}
+x <- "Ozancan"
+gsub("an","on",x)
+
+```
+
+```{r}
+turkceden_ingilizceye <- function(dataset){
+  turkce_harfler<- c("�","�","�","�","�","�","�","�","�","�","�","�")
+  ingilizce_harfler<- c("C","S","G","I","U","O","c","s","g","i","u","o")
+  dataset=mgsub(turkce_harfler,ingilizce_harfler,dataset)
+  return(dataset)
+}
+
+
+
+# Multiple gsub function
+
+mgsub <- function(pattern, replacement, x, ...) {
+  n = length(pattern)
+  if (n != length(replacement)) {
+    stop("pattern and replacement do not have the same length.")
+  }
+  result = x
+  for (i in 1:n) {
+    result <- gsub(pattern[i],replacement[i],result)
+  }
+  return(result)
+}
+
+tur@data$NAME_1 <- turkceden_ingilizceye(tur@data$NAME_1 )
+tur@data$NAME_1 <- gsub("K. Maras", "Kahramanmaras",tur@data$NAME_1 )
+tur@data$NAME_1 <- gsub("Kinkkale","Kirikkale",tur@data$NAME_1 )
+tur@data$NAME_1 <- gsub("Zinguldak", "Zonguldak", tur@data$NAME_1 )
+tur@data$NAME_1 <- gsub("Afyon","Afyonkarahisar", tur@data$NAME_1 )
+```
+
+```{r}
+mutluluk$sehir=turkceden_ingilizceye(mutluluk$sehir)
+```
+
+Yukar�da yazd���m�z fonksiyon yard�m�yla T��K'ten indirdi�imiz datadaki il isimlerini �ngilice karaktere uygun bir hale getiriyoruz. 
+
+```{r}
+mutluluk%>%as_tibble
+```
+
+```left_join``` kullanmak i�in tibble de�i�ken tipine �eviriyoruz.
+
+
+```{r}
+id_and_cities<- data_frame(id = rownames(tur@data), sehir = tur@data$NAME_1) %>% left_join(mutluluk, by = "sehir")
+
+```
+
+```left_join```  kullanarak iki datay� ortak de�i�ken olan �ehir isimleri kesi�ecek �ekilde birle�tiriyoruz.
+
+```{r}
+head(id_and_cities)
+```
+
+
+Art�k son a�ama. Yukar�daki kodlarda da g�r�ld��� gibi ggplot kullanarak haritalama i�lemi yapmak istiyorsan�z elinizdeki datada mutlaka lattitude ve longitude de�erleri olmak zorunda. Bu y�zden birkez daha ```left_join```  kullanarak bir �nceki stepte olu�turdu�umuz dataya �ehirlerin lattitude ve longitude de�erlerini ekliyoruz.
+```{r}
+final_map <- left_join(tur_for, id_and_cities, by = "id")
+
+```
+
+
+
+```{r}
+head(final_map)
+```
+
+
+
+```{r}
+ggplot(final_map) +geom_polygon( aes(x = long, y = lat, group = group, fill = mutluluk), color = "grey") +
+coord_map() +theme_void() + labs(title = "T�rkiye'nin illere g�re mutluluk indeksi-2015",caption = "Kaynak: T�rkiye Istatistik Kurumu") +
+scale_fill_distiller(name = "Mutluluk indeksi",palette = "Spectral", limits = c(0,100), na.value = "white") +
+theme(plot.title = element_text(hjust = 0.5),plot.subtitle = element_text(hjust = 0.5))
+```
+
+***Soru ve g�r��leriniz i�in ozancan@metu.edu.tr adresine e-mail yollayabilirsiniz.***
+
